@@ -6,24 +6,29 @@ import ProjectForm from "@/components/ProjectForm";
 import type { Project } from "@/components/ProjectCard";
 
 type Skill = { id: number; domain: string; name: string; level: string };
+type TimelineItem = { id: number; category: string; title: string; subtitle?: string; year?: string; sort_order: number };
 
 const DOMAINS = ["Langages", "Frameworks", "Développement Web", "Bases de données", "Outils"];
 const LEVELS = ["Débutant", "Intermédiaire", "Avancé"];
+const CATEGORIES = ["Formation", "Expérience", "Langues"];
 
 export default function DashboardPage() {
-  const [tab, setTab] = useState<"projects" | "skills">("projects");
+  const [tab, setTab] = useState<"projects" | "skills" | "timeline">("projects");
   const [projects, setProjects] = useState<Project[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
+  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [modal, setModal] = useState<{ open: boolean; project?: Project }>({ open: false });
   const [deleting, setDeleting] = useState<number | null>(null);
   const [newSkill, setNewSkill] = useState({ domain: DOMAINS[0], name: "", level: LEVELS[1] });
-
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
+  const [newItem, setNewItem] = useState({ category: CATEGORIES[0], title: "", subtitle: "", year: "" });
+  const [editingItem, setEditingItem] = useState<TimelineItem | null>(null);
 
   const fetchProjects = async () => { const r = await fetch("/api/projects"); setProjects(await r.json()); };
   const fetchSkills = async () => { const r = await fetch("/api/skills"); setSkills(await r.json()); };
+  const fetchTimeline = async () => { const r = await fetch("/api/timeline"); setTimeline(await r.json()); };
 
-  useEffect(() => { fetchProjects(); fetchSkills(); }, []);
+  useEffect(() => { fetchProjects(); fetchSkills(); fetchTimeline(); }, []);
 
   const handleSubmit = async (data: Partial<Project>) => {
     if (modal.project?.id) {
@@ -50,11 +55,6 @@ export default function DashboardPage() {
     fetchSkills();
   };
 
-  const handleDeleteSkill = async (id: number) => {
-    await fetch(`/api/skills/${id}`, { method: "DELETE" });
-    fetchSkills();
-  };
-
   const handleUpdateSkill = async () => {
     if (!editingSkill) return;
     await fetch(`/api/skills/${editingSkill.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editingSkill) });
@@ -62,8 +62,33 @@ export default function DashboardPage() {
     fetchSkills();
   };
 
+  const handleDeleteSkill = async (id: number) => {
+    await fetch(`/api/skills/${id}`, { method: "DELETE" });
+    fetchSkills();
+  };
+
+  const handleAddItem = async () => {
+    if (!newItem.title.trim()) return;
+    await fetch("/api/timeline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newItem) });
+    setNewItem((s) => ({ ...s, title: "", subtitle: "", year: "" }));
+    fetchTimeline();
+  };
+
+  const handleUpdateItem = async () => {
+    if (!editingItem) return;
+    await fetch(`/api/timeline/${editingItem.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editingItem) });
+    setEditingItem(null);
+    fetchTimeline();
+  };
+
+  const handleDeleteItem = async (id: number) => {
+    await fetch(`/api/timeline/${id}`, { method: "DELETE" });
+    fetchTimeline();
+  };
+
   const inputClass = "px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500";
   const domains = Array.from(new Set(skills.map((s) => s.domain)));
+  const tlCategories = Array.from(new Set(timeline.map((t) => t.category)));
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -96,8 +121,8 @@ export default function DashboardPage() {
           {[
             { label: "Total projets", value: projects.length },
             { label: "Terminés", value: projects.filter((p) => p.status === "completed").length },
-            { label: "En cours", value: projects.filter((p) => p.status === "in-progress").length },
             { label: "Compétences", value: skills.length },
+            { label: "Parcours", value: timeline.length },
           ].map(({ label, value }) => (
             <div key={label} className="bg-white dark:bg-neutral-900 rounded-xl p-4 border border-neutral-100 dark:border-neutral-800">
               <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
@@ -108,10 +133,10 @@ export default function DashboardPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-1 w-fit">
-          {(["projects", "skills"] as const).map((t) => (
+          {(["projects", "skills", "timeline"] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === t ? "bg-indigo-600 text-white" : "text-neutral-500 hover:text-neutral-900 dark:hover:text-white"}`}>
-              {t === "projects" ? "Projets" : "Compétences"}
+              {t === "projects" ? "Projets" : t === "skills" ? "Compétences" : "Parcours"}
             </button>
           ))}
         </div>
@@ -167,7 +192,6 @@ export default function DashboardPage() {
         {/* Skills tab */}
         {tab === "skills" && (
           <div className="space-y-6">
-            {/* Add skill */}
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 p-5">
               <h2 className="font-semibold text-neutral-900 dark:text-white mb-4">Ajouter une compétence</h2>
               <div className="flex flex-wrap gap-3">
@@ -185,8 +209,6 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
-
-            {/* Skills list by domain */}
             {domains.map((domain) => (
               <div key={domain} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden">
                 <div className="px-6 py-3 border-b border-neutral-100 dark:border-neutral-800">
@@ -198,41 +220,26 @@ export default function DashboardPage() {
                       {editingSkill?.id === skill.id ? (
                         <>
                           <div className="flex items-center gap-2 flex-1">
-                            <select className={`${inputClass} text-xs py-1`} value={editingSkill.domain}
-                              onChange={(e) => setEditingSkill((s) => s ? { ...s, domain: e.target.value } : s)}>
+                            <select className={`${inputClass} text-xs py-1`} value={editingSkill.domain} onChange={(e) => setEditingSkill((s) => s ? { ...s, domain: e.target.value } : s)}>
                               {DOMAINS.map((d) => <option key={d}>{d}</option>)}
                             </select>
-                            <input className={`${inputClass} flex-1 text-xs py-1`} value={editingSkill.name}
-                              onChange={(e) => setEditingSkill((s) => s ? { ...s, name: e.target.value } : s)} />
-                            <select className={`${inputClass} text-xs py-1`} value={editingSkill.level}
-                              onChange={(e) => setEditingSkill((s) => s ? { ...s, level: e.target.value } : s)}>
+                            <input className={`${inputClass} flex-1 text-xs py-1`} value={editingSkill.name} onChange={(e) => setEditingSkill((s) => s ? { ...s, name: e.target.value } : s)} />
+                            <select className={`${inputClass} text-xs py-1`} value={editingSkill.level} onChange={(e) => setEditingSkill((s) => s ? { ...s, level: e.target.value } : s)}>
                               {LEVELS.map((l) => <option key={l}>{l}</option>)}
                             </select>
                           </div>
                           <div className="flex items-center gap-1 ml-3">
-                            <button onClick={handleUpdateSkill} className="p-1 text-emerald-500 hover:text-emerald-600 transition-colors">
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => setEditingSkill(null)} className="p-1 text-neutral-300 hover:text-neutral-500 transition-colors">
-                              <X className="w-3.5 h-3.5" />
-                            </button>
+                            <button onClick={handleUpdateSkill} className="p-1 text-emerald-500 hover:text-emerald-600"><Check className="w-4 h-4" /></button>
+                            <button onClick={() => setEditingSkill(null)} className="p-1 text-neutral-300 hover:text-neutral-500"><X className="w-3.5 h-3.5" /></button>
                           </div>
                         </>
                       ) : (
                         <>
                           <span className="text-sm text-neutral-900 dark:text-white">{skill.name}</span>
                           <div className="flex items-center gap-3">
-                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
-                              skill.level === "Avancé" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" :
-                              skill.level === "Intermédiaire" ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" :
-                              "bg-neutral-100 text-neutral-500 dark:bg-neutral-800"
-                            }`}>{skill.level}</span>
-                            <button onClick={() => setEditingSkill(skill)} className="p-1 text-neutral-300 hover:text-indigo-500 transition-colors">
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <button onClick={() => handleDeleteSkill(skill.id)} className="p-1 text-neutral-300 hover:text-red-500 transition-colors">
-                              <X className="w-3.5 h-3.5" />
-                            </button>
+                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${skill.level === "Avancé" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" : skill.level === "Intermédiaire" ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" : "bg-neutral-100 text-neutral-500 dark:bg-neutral-800"}`}>{skill.level}</span>
+                            <button onClick={() => setEditingSkill(skill)} className="p-1 text-neutral-300 hover:text-indigo-500"><Pencil className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => handleDeleteSkill(skill.id)} className="p-1 text-neutral-300 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
                           </div>
                         </>
                       )}
@@ -243,9 +250,70 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
+
+        {/* Timeline tab */}
+        {tab === "timeline" && (
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 p-5">
+              <h2 className="font-semibold text-neutral-900 dark:text-white mb-4">Ajouter une étape</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <select className={inputClass} value={newItem.category} onChange={(e) => setNewItem((s) => ({ ...s, category: e.target.value }))}>
+                  {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                </select>
+                <input className={inputClass} placeholder="Année (ex: 2025)" value={newItem.year} onChange={(e) => setNewItem((s) => ({ ...s, year: e.target.value }))} />
+                <input className={`${inputClass} md:col-span-2`} placeholder="Titre *" value={newItem.title} onChange={(e) => setNewItem((s) => ({ ...s, title: e.target.value }))} />
+                <input className={`${inputClass} md:col-span-2`} placeholder="Sous-titre / description" value={newItem.subtitle} onChange={(e) => setNewItem((s) => ({ ...s, subtitle: e.target.value }))} />
+              </div>
+              <button onClick={handleAddItem} className="mt-3 flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                <Plus className="w-4 h-4" /> Ajouter
+              </button>
+            </div>
+
+            {tlCategories.map((cat) => (
+              <div key={cat} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden">
+                <div className="px-6 py-3 border-b border-neutral-100 dark:border-neutral-800">
+                  <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{cat}</h3>
+                </div>
+                <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                  {timeline.filter((t) => t.category === cat).map((item) => (
+                    <div key={item.id} className="px-6 py-3">
+                      {editingItem?.id === item.id ? (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <select className={`${inputClass} text-xs py-1`} value={editingItem.category} onChange={(e) => setEditingItem((s) => s ? { ...s, category: e.target.value } : s)}>
+                              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                            </select>
+                            <input className={`${inputClass} text-xs py-1`} placeholder="Année" value={editingItem.year ?? ""} onChange={(e) => setEditingItem((s) => s ? { ...s, year: e.target.value } : s)} />
+                            <input className={`${inputClass} text-xs py-1 col-span-2`} placeholder="Titre" value={editingItem.title} onChange={(e) => setEditingItem((s) => s ? { ...s, title: e.target.value } : s)} />
+                            <input className={`${inputClass} text-xs py-1 col-span-2`} placeholder="Sous-titre" value={editingItem.subtitle ?? ""} onChange={(e) => setEditingItem((s) => s ? { ...s, subtitle: e.target.value } : s)} />
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={handleUpdateItem} className="flex items-center gap-1 px-3 py-1 bg-emerald-500 text-white rounded-lg text-xs hover:bg-emerald-600"><Check className="w-3 h-3" /> Sauvegarder</button>
+                            <button onClick={() => setEditingItem(null)} className="px-3 py-1 text-xs text-neutral-400 hover:text-neutral-600">Annuler</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-medium text-neutral-900 dark:text-white">{item.title}</p>
+                            {item.subtitle && <p className="text-xs text-neutral-400 mt-0.5">{item.subtitle}</p>}
+                            {item.year && <p className="text-xs text-neutral-300 mt-0.5">{item.year}</p>}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => setEditingItem(item)} className="p-1 text-neutral-300 hover:text-indigo-500"><Pencil className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => handleDeleteItem(item.id)} className="p-1 text-neutral-300 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Modal projet */}
       {modal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-neutral-900 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-neutral-100 dark:border-neutral-800">

@@ -6,13 +6,25 @@ import type { Project } from "@/components/ProjectCard";
 export const revalidate = 0;
 
 export type Skill = { id: number; domain: string; name: string; level: string };
+export type TimelineItem = { id: number; category: string; title: string; subtitle?: string; year?: string; sort_order: number };
+
+const SEED_TIMELINE = [
+  { category: "Formation", title: "Licence en Développement Web", subtitle: "ISCOM", year: "2025 – aujourd'hui", sort_order: 0 },
+  { category: "Formation", title: "Baccalauréat Série H – Informatique", subtitle: "LTN", year: "2025", sort_order: 1 },
+  { category: "Formation", title: "BEP Informatique", subtitle: "LTN", year: "2025", sort_order: 2 },
+  { category: "Formation", title: "Certification en informatique bureautique", subtitle: null, year: "2023", sort_order: 3 },
+  { category: "Expérience", title: "Bénévole – Service Audiovisuel & Informatique", subtitle: "Communauté Évangélique de Yamtenga · Installation matériel, OBS Studio, vMix, Réseau, Dépannage", year: null, sort_order: 0 },
+  { category: "Langues", title: "Français", subtitle: "Courant", year: null, sort_order: 0 },
+  { category: "Langues", title: "Mooré", subtitle: "Langue maternelle", year: null, sort_order: 1 },
+  { category: "Langues", title: "Anglais", subtitle: "Notions", year: null, sort_order: 2 },
+];
 
 export default async function Home() {
   await initDB();
   const projects = await sql`SELECT * FROM projects ORDER BY created_at DESC` as Project[];
   const skills = await sql`SELECT * FROM skills ORDER BY domain, id` as Skill[];
+  let timeline = await sql`SELECT * FROM timeline ORDER BY category, sort_order, id` as TimelineItem[];
 
-  // Seed skills si vide
   if (skills.length === 0) {
     await sql`INSERT INTO skills (domain, name, level) VALUES
       ('Langages', 'HTML5', 'Avancé'),
@@ -29,9 +41,18 @@ export default async function Home() {
       ('Outils', 'Visual Studio Code', 'Intermédiaire'),
       ('Outils', 'Linux', 'Débutant')
     `;
-    const seeded = await sql`SELECT * FROM skills ORDER BY domain, id` as Skill[];
-    return <HomeClient projects={projects} skills={seeded} />;
   }
 
-  return <HomeClient projects={projects} skills={skills} />;
+  if (timeline.length === 0) {
+    for (const item of SEED_TIMELINE) {
+      await sql`INSERT INTO timeline (category, title, subtitle, year, sort_order) VALUES (${item.category}, ${item.title}, ${item.subtitle}, ${item.year}, ${item.sort_order})`;
+    }
+    timeline = await sql`SELECT * FROM timeline ORDER BY category, sort_order, id` as TimelineItem[];
+  }
+
+  const seededSkills = skills.length === 0
+    ? await sql`SELECT * FROM skills ORDER BY domain, id` as Skill[]
+    : skills;
+
+  return <HomeClient projects={projects} skills={seededSkills} timeline={timeline} />;
 }

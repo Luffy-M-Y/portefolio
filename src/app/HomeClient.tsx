@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { GitBranch, Mail, MapPin, GraduationCap, ArrowRight, ExternalLink } from "lucide-react";
 import ProjectCard from "@/components/ProjectCard";
 import type { Project } from "@/components/ProjectCard";
-import type { Skill } from "./page";
+import type { Skill, TimelineItem } from "./page";
 
 const fade = (delay = 0) => ({
   initial: { opacity: 0, y: 20 },
@@ -16,8 +16,11 @@ const LEVEL_CONFIG = {
   "Débutant":      { pct: "33%",  color: "bg-white/30",  label: "Débutant" },
 } as const;
 
-export default function HomeClient({ projects, skills }: { projects: Project[]; skills: Skill[] }) {
+const CATEGORY_ORDER = ["Formation", "Expérience", "Langues"];
+
+export default function HomeClient({ projects, skills, timeline }: { projects: Project[]; skills: Skill[]; timeline: TimelineItem[] }) {
   const domains = Array.from(new Set(skills.map((s) => s.domain)));
+  const categories = CATEGORY_ORDER.filter((c) => timeline.some((t) => t.category === c));
   return (
     <main className="min-h-screen bg-[#0f0f0f] text-white">
 
@@ -27,6 +30,7 @@ export default function HomeClient({ projects, skills }: { projects: Project[]; 
           <span className="text-sm font-medium text-white/80 tracking-widest uppercase">Manassé</span>
           <div className="flex items-center gap-8 text-sm text-white/60">
             <a href="#about" className="hover:text-white transition-colors">À propos</a>
+            <a href="#parcours" className="hover:text-white transition-colors">Parcours</a>
             <a href="#projects" className="hover:text-white transition-colors">Projets</a>
             <a href="#contact" className="hover:text-white transition-colors">Contact</a>
           </div>
@@ -106,6 +110,34 @@ export default function HomeClient({ projects, skills }: { projects: Project[]; 
                 </div>
               ))}
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Timeline */}
+      <section id="parcours" className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="mb-16">
+            <p className="text-xs text-white/50 tracking-widest uppercase mb-4">Parcours</p>
+            <h2 className="text-3xl font-bold text-white">Mon chemin jusqu&apos;ici.</h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-12">
+            {categories.map((cat, ci) => (
+              <motion.div key={cat} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: ci * 0.1 }}>
+                <p className="text-xs text-white/50 tracking-widest uppercase mb-6">{cat}</p>
+                <div className="relative pl-4 border-l border-white/10 space-y-6">
+                  {timeline.filter((t) => t.category === cat).map((item) => (
+                    <div key={item.id} className="relative">
+                      <div className="absolute -left-[1.35rem] top-1.5 w-2 h-2 rounded-full bg-white/20 border border-white/10" />
+                      <p className="text-sm font-medium text-white/85 leading-snug">{item.title}</p>
+                      {item.subtitle && <p className="text-xs text-white/50 mt-1 leading-relaxed">{item.subtitle}</p>}
+                      {item.year && <p className="text-xs text-white/30 mt-1">{item.year}</p>}
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
