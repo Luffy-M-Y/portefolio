@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className="scroll-smooth">
-      <body className={`${geist.className} bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-white antialiased`}>
+      <body className={`${geist.className} bg-[#0f0f0f] text-white antialiased`}>
         {children}
       </body>
     </html>

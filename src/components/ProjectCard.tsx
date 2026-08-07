@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { GitBranch, ExternalLink, Code2 } from "lucide-react";
+import { GitBranch, ExternalLink, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 export type Project = {
@@ -21,61 +21,66 @@ export type Project = {
 export default function ProjectCard({ project, index }: { project: Project; index: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.15 }}
-      className="group relative bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 border border-neutral-100 dark:border-neutral-800"
+      transition={{ duration: 0.6, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
+      className="group relative bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden hover:border-white/10 hover:bg-white/[0.05] transition-all duration-300"
     >
       {/* Image */}
-      <Link href={`/projects/${project.id}`} className="block relative h-48 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 overflow-hidden">
+      <Link href={`/projects/${project.id}`} className="block relative h-52 overflow-hidden bg-white/[0.02]">
         {project.image_url ? (
-          <img src={project.image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <img src={project.image_url} alt={project.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
         ) : (
           <div className="flex items-center justify-center h-full">
-            <Code2 className="w-16 h-16 text-indigo-300 dark:text-indigo-700" />
+            <span className="text-5xl font-bold text-white/5">{project.title[0]}</span>
           </div>
         )}
-        <span className={`absolute top-3 right-3 text-xs font-medium px-2.5 py-1 rounded-full ${
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f]/60 to-transparent" />
+        <span className={`absolute top-3 left-3 text-xs px-2.5 py-1 rounded-full font-medium ${
           project.status === "completed"
-            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-            : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+            : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
         }`}>
           {project.status === "completed" ? "Terminé" : "En cours"}
         </span>
       </Link>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-5">
         <div className="flex items-start justify-between gap-2 mb-2">
           <Link href={`/projects/${project.id}`}>
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white leading-tight hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{project.title}</h3>
+            <h3 className="font-semibold text-white/90 group-hover:text-white transition-colors leading-snug flex items-center gap-1">
+              {project.title}
+              <ArrowUpRight className="w-3.5 h-3.5 text-white/20 group-hover:text-white/60 transition-colors" />
+            </h3>
           </Link>
-          <span className="shrink-0 text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-full">
+          <span className="shrink-0 text-xs text-white/20 border border-white/5 px-2 py-0.5 rounded-full">
             {project.type === "personal" ? "Personnel" : "Académique"}
           </span>
         </div>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed mb-4 line-clamp-3">{project.description}</p>
 
-        <div className="flex flex-wrap gap-1.5 mb-5">
+        <p className="text-sm text-white/40 leading-relaxed mb-4 line-clamp-2">{project.description}</p>
+
+        <div className="flex flex-wrap gap-1.5 mb-4">
           {project.technologies.map((tech) => (
-            <span key={tech} className="text-xs px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-medium">
+            <span key={tech} className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/5">
               {tech}
             </span>
           ))}
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-4 pt-3 border-t border-white/5">
           {project.github_url && (
             <a href={project.github_url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-              <GitBranch className="w-4 h-4" /> Code
+              className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/70 transition-colors">
+              <GitBranch className="w-3.5 h-3.5" /> Code
             </a>
           )}
           {project.demo_url && (
             <a href={project.demo_url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-              <ExternalLink className="w-4 h-4" /> Démo
+              className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/70 transition-colors">
+              <ExternalLink className="w-3.5 h-3.5" /> Démo
             </a>
           )}
         </div>
