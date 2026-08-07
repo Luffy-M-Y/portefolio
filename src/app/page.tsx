@@ -62,7 +62,7 @@ export default async function Home() {
     : skills;
 
   const settingsRows = await sql`SELECT * FROM settings`;
-  const settings: Settings = Object.fromEntries(settingsRows.map((r: { key: string; value: string }) => [r.key, r.value]));
+  const settings: Settings = Object.fromEntries((settingsRows as { key: string; value: string }[]).map((r) => [r.key, r.value]));
 
   return <HomeClient projects={projects} skills={seededSkills} timeline={timeline} settings={settings} />;
 }
