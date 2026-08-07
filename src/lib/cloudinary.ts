@@ -1,15 +1,14 @@
 import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: "injaxhrz",
+  api_key: "333983341487416",
+  api_secret: "aNRmizjvQJDK3JwLDvVVxUKD75k",
 });
 
 export async function uploadImage(base64: string): Promise<string> {
   const result = await cloudinary.uploader.upload(base64, {
     folder: "portfolio",
-    transformation: [{ width: 1200, height: 630, crop: "fill", quality: "auto" }],
   });
   return result.secure_url;
 }

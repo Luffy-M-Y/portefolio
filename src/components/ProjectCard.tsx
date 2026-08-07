@@ -1,6 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import { GitBranch, ExternalLink, Code2 } from "lucide-react";
+import Link from "next/link";
 
 export type Project = {
   id: number;
@@ -9,10 +10,12 @@ export type Project = {
   long_description?: string;
   technologies: string[];
   image_url?: string;
+  media?: string[];
   github_url?: string;
   demo_url?: string;
   status: string;
   type: string;
+  created_at?: string;
 };
 
 export default function ProjectCard({ project, index }: { project: Project; index: number }) {
@@ -25,7 +28,7 @@ export default function ProjectCard({ project, index }: { project: Project; inde
       className="group relative bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 border border-neutral-100 dark:border-neutral-800"
     >
       {/* Image */}
-      <div className="relative h-48 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 overflow-hidden">
+      <Link href={`/projects/${project.id}`} className="block relative h-48 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 overflow-hidden">
         {project.image_url ? (
           <img src={project.image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
@@ -40,19 +43,20 @@ export default function ProjectCard({ project, index }: { project: Project; inde
         }`}>
           {project.status === "completed" ? "Terminé" : "En cours"}
         </span>
-      </div>
+      </Link>
 
       {/* Content */}
       <div className="p-6">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white leading-tight">{project.title}</h3>
+          <Link href={`/projects/${project.id}`}>
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white leading-tight hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{project.title}</h3>
+          </Link>
           <span className="shrink-0 text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-full">
             {project.type === "personal" ? "Personnel" : "Académique"}
           </span>
         </div>
         <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed mb-4 line-clamp-3">{project.description}</p>
 
-        {/* Technologies */}
         <div className="flex flex-wrap gap-1.5 mb-5">
           {project.technologies.map((tech) => (
             <span key={tech} className="text-xs px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-medium">
@@ -61,7 +65,6 @@ export default function ProjectCard({ project, index }: { project: Project; inde
           ))}
         </div>
 
-        {/* Links */}
         <div className="flex gap-3">
           {project.github_url && (
             <a href={project.github_url} target="_blank" rel="noopener noreferrer"

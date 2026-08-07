@@ -12,6 +12,7 @@ export async function initDB() {
       long_description TEXT,
       technologies TEXT[] NOT NULL,
       image_url TEXT,
+      media TEXT[] DEFAULT '{}',
       github_url TEXT,
       demo_url TEXT,
       status VARCHAR(50) DEFAULT 'completed',
@@ -20,4 +21,5 @@ export async function initDB() {
       updated_at TIMESTAMP DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS media TEXT[] DEFAULT '{}'`;
 }

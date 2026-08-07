@@ -16,10 +16,10 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   try {
     const body = await req.json();
-    const { title, description, long_description, technologies, image_url, github_url, demo_url, status, type } = body;
+    const { title, description, long_description, technologies, image_url, media, github_url, demo_url, status, type } = body;
     const [project] = await sql`
-      INSERT INTO projects (title, description, long_description, technologies, image_url, github_url, demo_url, status, type)
-      VALUES (${title}, ${description}, ${long_description}, ${technologies}, ${image_url}, ${github_url}, ${demo_url}, ${status}, ${type})
+      INSERT INTO projects (title, description, long_description, technologies, image_url, media, github_url, demo_url, status, type)
+      VALUES (${title}, ${description}, ${long_description}, ${technologies}, ${image_url}, ${media ?? []}, ${github_url}, ${demo_url}, ${status}, ${type})
       RETURNING *
     `;
     return NextResponse.json(project, { status: 201 });

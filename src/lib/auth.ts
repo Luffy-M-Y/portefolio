@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 
-const ADMIN_HASH = "$2b$10$ZXRnyfQvxgFWkxw9/bALjeZrO5yww6pFbFYaquGGTANGTfF2Rfw7i";
+const ADMIN_HASH = "$2b$12$nQob7RelGBf6CTsSGYIcNuGwtORkGBBA5/KHpgNVIVwe1sgF/TNFS";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
