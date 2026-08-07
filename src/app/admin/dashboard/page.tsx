@@ -28,12 +28,13 @@ export default function DashboardPage() {
   const [siteSettings, setSiteSettings] = useState({ bio: "", email: "", github_url: "", available: "true" });
   const [savingSettings, setSavingSettings] = useState(false);
 
-  const fetchProjects = async () => { const r = await fetch("/api/projects"); setProjects(await r.json()); };
-  const fetchSkills = async () => { const r = await fetch("/api/skills"); setSkills(await r.json()); };
-  const fetchTimeline = async () => { const r = await fetch("/api/timeline"); setTimeline(await r.json()); };
+  const fetchProjects = async () => { const r = await fetch("/api/projects"); const d = await r.json(); setProjects(Array.isArray(d) ? d : []); };
+  const fetchSkills = async () => { const r = await fetch("/api/skills"); const d = await r.json(); setSkills(Array.isArray(d) ? d : []); };
+  const fetchTimeline = async () => { const r = await fetch("/api/timeline"); const d = await r.json(); setTimeline(Array.isArray(d) ? d : []); };
   const fetchSettings = async () => {
     const r = await fetch("/api/settings");
     const s = await r.json();
+    if (s.error) return;
     setCvUrl(s.cv_url ?? "");
     setSiteSettings({
       bio: s.bio ?? "",

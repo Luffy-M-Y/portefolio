@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { auth } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const projects = await sql`SELECT * FROM projects ORDER BY created_at DESC`;
