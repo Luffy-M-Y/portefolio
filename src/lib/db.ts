@@ -22,4 +22,28 @@ export async function initDB() {
     )
   `;
   await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS media TEXT[] DEFAULT '{}'`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS skills (
+      id SERIAL PRIMARY KEY,
+      domain VARCHAR(100) NOT NULL,
+      name VARCHAR(100) NOT NULL,
+      level VARCHAR(50) NOT NULL
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS timeline (
+      id SERIAL PRIMARY KEY,
+      category VARCHAR(100) NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      subtitle TEXT,
+      year VARCHAR(20),
+      sort_order INT DEFAULT 0
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS settings (
+      key VARCHAR(100) PRIMARY KEY,
+      value TEXT
+    )
+  `;
 }

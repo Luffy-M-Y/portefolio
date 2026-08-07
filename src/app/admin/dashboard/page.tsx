@@ -1,21 +1,37 @@
 "use client";
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
-import { Plus, Pencil, Trash2, LogOut, ExternalLink, LayoutDashboard } from "lucide-react";
+import { Plus, Pencil, Trash2, LogOut, ExternalLink, LayoutDashboard, X, Check, Download } from "lucide-react";
 import ProjectForm from "@/components/ProjectForm";
 import type { Project } from "@/components/ProjectCard";
 
+type Skill = { id: number; domain: string; name: string; level: string };
+type TimelineItem = { id: number; category: string; title: string; subtitle?: string; year?: string; sort_order: number };
+
+const DOMAINS = ["Langages", "Frameworks", "Développement Web", "Bases de données", "Outils"];
+const LEVELS = ["Débutant", "Intermédiaire", "Avancé"];
+const CATEGORIES = ["Formation", "Expérience", "Langues"];
+
 export default function DashboardPage() {
+  const [tab, setTab] = useState<"projects" | "skills" | "timeline" | "settings">("projects");
   const [projects, setProjects] = useState<Project[]>([]);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [modal, setModal] = useState<{ open: boolean; project?: Project }>({ open: false });
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [newSkill, setNewSkill] = useState({ domain: DOMAINS[0], name: "", level: LEVELS[1] });
+  const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
+  const [newItem, setNewItem] = useState({ category: CATEGORIES[0], title: "", subtitle: "", year: "" });
+  const [editingItem, setEditingItem] = useState<TimelineItem | null>(null);
+  const [cvUrl, setCvUrl] = useState("");
+  const [cvUploading, setCvUploading] = useState(false);
 
-  const fetchProjects = async () => {
-    const res = await fetch("/api/projects");
-    setProjects(await res.json());
-  };
+  const fetchProjects = async () => { const r = await fetch("/api/projects"); setProjects(await r.json()); };
+  const fetchSkills = async () => { const r = await fetch("/api/skills"); setSkills(await r.json()); };
+  const fetchTimeline = async () => { const r = await fetch("/api/timeline"); setTimeline(await r.json()); };
+  const fetchSettings = async () => { const r = await fetch("/api/settings"); const s = await r.json(); setCvUrl(s.cv_url ?? ""); };
 
-  useEffect(() => { fetchProjects(); }, []);
+  useEffect(() => { fetchProjects(); fetchSkills(); fetchTimeline(); fetchSettings(); }, []);
 
   const handleSubmit = async (data: Partial<Project>) => {
     if (modal.project?.id) {
@@ -35,9 +51,73 @@ export default function DashboardPage() {
     fetchProjects();
   };
 
+  const handleAddSkill = async () => {
+    if (!newSkill.name.trim()) return;
+    await fetch("/api/skills", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newSkill) });
+    setNewSkill((s) => ({ ...s, name: "" }));
+    fetchSkills();
+  };
+
+  const handleUpdateSkill = async () => {
+    if (!editingSkill) return;
+    await fetch(`/api/skills/${editingSkill.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editingSkill) });
+    setEditingSkill(null);
+    fetchSkills();
+  };
+
+  const handleDeleteSkill = async (id: number) => {
+    await fetch(`/api/skills/${id}`, { method: "DELETE" });
+    fetchSkills();
+  };
+
+  const handleAddItem = async () => {
+    if (!newItem.title.trim()) return;
+    await fetch("/api/timeline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newItem) });
+    setNewItem((s) => ({ ...s, title: "", subtitle: "", year: "" }));
+    fetchTimeline();
+  };
+
+  const handleUpdateItem = async () => {
+    if (!editingItem) return;
+    await fetch(`/api/timeline/${editingItem.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editingItem) });
+    setEditingItem(null);
+    fetchTimeline();
+  };
+
+  const handleDeleteItem = async (id: number) => {
+    await fetch(`/api/timeline/${id}`, { method: "DELETE" });
+    fetchTimeline();
+  };
+
+  const handleCvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCvUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "ihtxsrjt");
+    formData.append("public_id", "CV_Manasse_YAMEOGO");
+    formData.append("resource_type", "raw");
+    const res = await fetch("https://api.cloudinary.com/v1_1/injaxhrz/raw/upload", { method: "POST", body: formData });
+    const data = await res.json();
+    const url = data.secure_url;
+    await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "cv_url", value: url }) });
+    setCvUrl(url);
+    setCvUploading(false);
+  };
+
+  const handleCvDelete = async () => {
+    if (!confirm("Supprimer le CV ?")) return;
+    await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "cv_url", value: "" }) });
+    setCvUrl("");
+  };
+
+  const inputClass = "px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500";
+  const domains = Array.from(new Set(skills.map((s) => s.domain)));
+  const tlCategories = Array.from(new Set(timeline.map((t) => t.category)));
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      {/* Header */}
       <header className="bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -46,7 +126,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <h1 className="font-semibold text-neutral-900 dark:text-white text-sm">Dashboard</h1>
-              <p className="text-xs text-neutral-400">Gestion des projets</p>
+              <p className="text-xs text-neutral-400">Gestion du portfolio</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -63,11 +143,12 @@ export default function DashboardPage() {
 
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-4 gap-4 mb-8">
           {[
             { label: "Total projets", value: projects.length },
             { label: "Terminés", value: projects.filter((p) => p.status === "completed").length },
-            { label: "En cours", value: projects.filter((p) => p.status === "in-progress").length },
+            { label: "Compétences", value: skills.length },
+            { label: "Parcours", value: timeline.length },
           ].map(({ label, value }) => (
             <div key={label} className="bg-white dark:bg-neutral-900 rounded-xl p-4 border border-neutral-100 dark:border-neutral-800">
               <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
@@ -76,78 +157,219 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Projects list */}
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-neutral-800">
-            <h2 className="font-semibold text-neutral-900 dark:text-white">Projets</h2>
-            <button onClick={() => setModal({ open: true })}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
-              <Plus className="w-4 h-4" /> Ajouter
+        {/* Tabs */}
+        <div className="flex gap-1 mb-6 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-1 w-fit">
+          {(["projects", "skills", "timeline", "settings"] as const).map((t) => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === t ? "bg-indigo-600 text-white" : "text-neutral-500 hover:text-neutral-900 dark:hover:text-white"}`}>
+              {t === "projects" ? "Projets" : t === "skills" ? "Compétences" : t === "timeline" ? "Parcours" : "Réglages"}
             </button>
-          </div>
+          ))}
+        </div>
 
-          {projects.length === 0 ? (
-            <div className="text-center py-16 text-neutral-400">
-              <p className="text-sm">Aucun projet pour l&apos;instant.</p>
-              <button onClick={() => setModal({ open: true })} className="mt-3 text-sm text-indigo-600 hover:underline">
-                Ajouter votre premier projet →
+        {/* Projects tab */}
+        {tab === "projects" && (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-neutral-800">
+              <h2 className="font-semibold text-neutral-900 dark:text-white">Projets</h2>
+              <button onClick={() => setModal({ open: true })}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                <Plus className="w-4 h-4" /> Ajouter
               </button>
             </div>
-          ) : (
-            <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-              {projects.map((project) => (
-                <div key={project.id} className="flex items-center gap-4 px-6 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
-                  {project.image_url ? (
-                    <img src={project.image_url} alt={project.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center shrink-0 text-indigo-400 font-bold text-lg">
-                      {project.title[0]}
+            {projects.length === 0 ? (
+              <div className="text-center py-16 text-neutral-400">
+                <p className="text-sm">Aucun projet pour l&apos;instant.</p>
+                <button onClick={() => setModal({ open: true })} className="mt-3 text-sm text-indigo-600 hover:underline">Ajouter votre premier projet →</button>
+              </div>
+            ) : (
+              <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                {projects.map((project) => (
+                  <div key={project.id} className="flex items-center gap-4 px-6 py-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+                    {project.image_url ? (
+                      <img src={project.image_url} alt={project.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center shrink-0 text-indigo-400 font-bold text-lg">
+                        {project.title[0]}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-neutral-900 dark:text-white text-sm truncate">{project.title}</p>
+                      <p className="text-xs text-neutral-400 truncate mt-0.5">{project.description}</p>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-neutral-900 dark:text-white text-sm truncate">{project.title}</p>
-                    <p className="text-xs text-neutral-400 truncate mt-0.5">{project.description}</p>
-                    <div className="flex gap-1.5 mt-1.5">
-                      {project.technologies.slice(0, 3).map((t) => (
-                        <span key={t} className="text-xs px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500">{t}</span>
-                      ))}
-                      {project.technologies.length > 3 && (
-                        <span className="text-xs text-neutral-400">+{project.technologies.length - 3}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${project.status === "completed" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"}`}>
+                        {project.status === "completed" ? "Terminé" : "En cours"}
+                      </span>
+                      <button onClick={() => setModal({ open: true, project })} className="p-1.5 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 rounded-lg transition-colors">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(project.id)} disabled={deleting === project.id} className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors disabled:opacity-50">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Skills tab */}
+        {tab === "skills" && (
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 p-5">
+              <h2 className="font-semibold text-neutral-900 dark:text-white mb-4">Ajouter une compétence</h2>
+              <div className="flex flex-wrap gap-3">
+                <select className={inputClass} value={newSkill.domain} onChange={(e) => setNewSkill((s) => ({ ...s, domain: e.target.value }))}>
+                  {DOMAINS.map((d) => <option key={d}>{d}</option>)}
+                </select>
+                <input className={`${inputClass} flex-1 min-w-40`} placeholder="Nom (ex: React)" value={newSkill.name}
+                  onChange={(e) => setNewSkill((s) => ({ ...s, name: e.target.value }))}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAddSkill(); }} />
+                <select className={inputClass} value={newSkill.level} onChange={(e) => setNewSkill((s) => ({ ...s, level: e.target.value }))}>
+                  {LEVELS.map((l) => <option key={l}>{l}</option>)}
+                </select>
+                <button onClick={handleAddSkill} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                  <Plus className="w-4 h-4" /> Ajouter
+                </button>
+              </div>
+            </div>
+            {domains.map((domain) => (
+              <div key={domain} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden">
+                <div className="px-6 py-3 border-b border-neutral-100 dark:border-neutral-800">
+                  <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{domain}</h3>
+                </div>
+                <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                  {skills.filter((s) => s.domain === domain).map((skill) => (
+                    <div key={skill.id} className="flex items-center justify-between px-6 py-3">
+                      {editingSkill?.id === skill.id ? (
+                        <>
+                          <div className="flex items-center gap-2 flex-1">
+                            <select className={`${inputClass} text-xs py-1`} value={editingSkill.domain} onChange={(e) => setEditingSkill((s) => s ? { ...s, domain: e.target.value } : s)}>
+                              {DOMAINS.map((d) => <option key={d}>{d}</option>)}
+                            </select>
+                            <input className={`${inputClass} flex-1 text-xs py-1`} value={editingSkill.name} onChange={(e) => setEditingSkill((s) => s ? { ...s, name: e.target.value } : s)} />
+                            <select className={`${inputClass} text-xs py-1`} value={editingSkill.level} onChange={(e) => setEditingSkill((s) => s ? { ...s, level: e.target.value } : s)}>
+                              {LEVELS.map((l) => <option key={l}>{l}</option>)}
+                            </select>
+                          </div>
+                          <div className="flex items-center gap-1 ml-3">
+                            <button onClick={handleUpdateSkill} className="p-1 text-emerald-500 hover:text-emerald-600"><Check className="w-4 h-4" /></button>
+                            <button onClick={() => setEditingSkill(null)} className="p-1 text-neutral-300 hover:text-neutral-500"><X className="w-3.5 h-3.5" /></button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-sm text-neutral-900 dark:text-white">{skill.name}</span>
+                          <div className="flex items-center gap-3">
+                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${skill.level === "Avancé" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" : skill.level === "Intermédiaire" ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" : "bg-neutral-100 text-neutral-500 dark:bg-neutral-800"}`}>{skill.level}</span>
+                            <button onClick={() => setEditingSkill(skill)} className="p-1 text-neutral-300 hover:text-indigo-500"><Pencil className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => handleDeleteSkill(skill.id)} className="p-1 text-neutral-300 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                          </div>
+                        </>
                       )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      project.status === "completed"
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-                        : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
-                    }`}>
-                      {project.status === "completed" ? "Terminé" : "En cours"}
-                    </span>
-                    <button onClick={() => setModal({ open: true, project })}
-                      className="p-1.5 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 rounded-lg transition-colors">
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(project.id)} disabled={deleting === project.id}
-                      className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors disabled:opacity-50">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Timeline tab */}
+        {tab === "timeline" && (
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 p-5">
+              <h2 className="font-semibold text-neutral-900 dark:text-white mb-4">Ajouter une étape</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <select className={inputClass} value={newItem.category} onChange={(e) => setNewItem((s) => ({ ...s, category: e.target.value }))}>
+                  {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                </select>
+                <input className={inputClass} placeholder="Année (ex: 2025)" value={newItem.year} onChange={(e) => setNewItem((s) => ({ ...s, year: e.target.value }))} />
+                <input className={`${inputClass} md:col-span-2`} placeholder="Titre *" value={newItem.title} onChange={(e) => setNewItem((s) => ({ ...s, title: e.target.value }))} />
+                <input className={`${inputClass} md:col-span-2`} placeholder="Sous-titre / description" value={newItem.subtitle} onChange={(e) => setNewItem((s) => ({ ...s, subtitle: e.target.value }))} />
+              </div>
+              <button onClick={handleAddItem} className="mt-3 flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                <Plus className="w-4 h-4" /> Ajouter
+              </button>
             </div>
-          )}
-        </div>
+
+            {tlCategories.map((cat) => (
+              <div key={cat} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden">
+                <div className="px-6 py-3 border-b border-neutral-100 dark:border-neutral-800">
+                  <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{cat}</h3>
+                </div>
+                <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                  {timeline.filter((t) => t.category === cat).map((item) => (
+                    <div key={item.id} className="px-6 py-3">
+                      {editingItem?.id === item.id ? (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <select className={`${inputClass} text-xs py-1`} value={editingItem.category} onChange={(e) => setEditingItem((s) => s ? { ...s, category: e.target.value } : s)}>
+                              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                            </select>
+                            <input className={`${inputClass} text-xs py-1`} placeholder="Année" value={editingItem.year ?? ""} onChange={(e) => setEditingItem((s) => s ? { ...s, year: e.target.value } : s)} />
+                            <input className={`${inputClass} text-xs py-1 col-span-2`} placeholder="Titre" value={editingItem.title} onChange={(e) => setEditingItem((s) => s ? { ...s, title: e.target.value } : s)} />
+                            <input className={`${inputClass} text-xs py-1 col-span-2`} placeholder="Sous-titre" value={editingItem.subtitle ?? ""} onChange={(e) => setEditingItem((s) => s ? { ...s, subtitle: e.target.value } : s)} />
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={handleUpdateItem} className="flex items-center gap-1 px-3 py-1 bg-emerald-500 text-white rounded-lg text-xs hover:bg-emerald-600"><Check className="w-3 h-3" /> Sauvegarder</button>
+                            <button onClick={() => setEditingItem(null)} className="px-3 py-1 text-xs text-neutral-400 hover:text-neutral-600">Annuler</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-medium text-neutral-900 dark:text-white">{item.title}</p>
+                            {item.subtitle && <p className="text-xs text-neutral-400 mt-0.5">{item.subtitle}</p>}
+                            {item.year && <p className="text-xs text-neutral-300 mt-0.5">{item.year}</p>}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => setEditingItem(item)} className="p-1 text-neutral-300 hover:text-indigo-500"><Pencil className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => handleDeleteItem(item.id)} className="p-1 text-neutral-300 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Modal */}
+        {/* Settings tab */}
+        {tab === "settings" && (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 p-6">
+            <h2 className="font-semibold text-neutral-900 dark:text-white mb-6">CV téléchargeable</h2>
+            <div className="space-y-4">
+              <label className="flex items-center gap-3 px-4 py-3 border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl cursor-pointer hover:border-indigo-400 transition-colors w-fit">
+                <Download className="w-5 h-5 text-neutral-400" />
+                <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                  {cvUploading ? "Upload en cours..." : "Choisir un fichier PDF"}
+                </span>
+                <input type="file" accept=".pdf" className="hidden" onChange={handleCvUpload} disabled={cvUploading} />
+              </label>
+              {cvUrl && (
+                <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-950 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300 truncate flex-1">CV_Manasse_YAMEOGO.pdf</p>
+                  <a href={cvUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline shrink-0">Voir</a>
+                  <button onClick={handleCvDelete} className="text-xs text-red-400 hover:text-red-600 shrink-0">Supprimer</button>
+                </div>
+              )}
+              {!cvUrl && <p className="text-xs text-neutral-400">Aucun CV uploadé — le bouton n&apos;apparaîtra pas sur le portfolio.</p>}
+            </div>
+          </div>
+        )}
+
       {modal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-neutral-900 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-neutral-100 dark:border-neutral-800">
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <h3 className="font-semibold text-neutral-900 dark:text-white">
-                {modal.project ? "Modifier le projet" : "Nouveau projet"}
-              </h3>
+              <h3 className="font-semibold text-neutral-900 dark:text-white">{modal.project ? "Modifier le projet" : "Nouveau projet"}</h3>
               <button onClick={() => setModal({ open: false })} className="text-neutral-400 hover:text-neutral-600 text-xl leading-none">×</button>
             </div>
             <div className="p-6">

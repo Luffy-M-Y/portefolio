@@ -1,95 +1,117 @@
 "use client";
 import { motion } from "framer-motion";
-import { GitBranch, Mail, MapPin, GraduationCap, Code2, Sparkles } from "lucide-react";
+import { GitBranch, Mail, MapPin, GraduationCap, ArrowRight, ExternalLink, Download } from "lucide-react";
 import ProjectCard from "@/components/ProjectCard";
 import type { Project } from "@/components/ProjectCard";
+import type { Skill, TimelineItem, Settings } from "./page";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.6, delay: i * 0.1 } }),
-};
+const fade = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 } as const,
+  animate: { opacity: 1, y: 0, transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] as const } },
+});
 
-export default function HomeClient({ projects }: { projects: Project[] }) {
+const LEVEL_CONFIG = {
+  "Avancé":        { pct: "100%", color: "bg-white",      label: "Avancé" },
+  "Intermédiaire": { pct: "66%",  color: "bg-white/60",  label: "Intermédiaire" },
+  "Débutant":      { pct: "33%",  color: "bg-white/30",  label: "Débutant" },
+} as const;
+
+const CATEGORY_ORDER = ["Formation", "Expérience", "Langues"];
+
+export default function HomeClient({ projects, skills, timeline, settings }: { projects: Project[]; skills: Skill[]; timeline: TimelineItem[]; settings: Settings }) {
+  const domains = Array.from(new Set(skills.map((s) => s.domain)));
+  const categories = CATEGORY_ORDER.filter((c) => timeline.some((t) => t.category === c));
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-[#0f0f0f] text-white">
+
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/80 dark:bg-neutral-950/80 border-b border-neutral-100 dark:border-neutral-800">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#0f0f0f]/80 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="font-semibold text-indigo-600 dark:text-indigo-400">PM.</span>
-          <div className="flex items-center gap-6 text-sm text-neutral-600 dark:text-neutral-400">
-            <a href="#about" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">À propos</a>
-            <a href="#projects" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Projets</a>
-            <a href="#contact" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Contact</a>
+          <span className="text-sm font-medium text-white/80 tracking-widest uppercase">M-Y's/Portfolio</span>
+          <div className="flex items-center gap-8 text-sm text-white/60">
+            <a href="#about" className="hover:text-white transition-colors">À propos</a>
+            <a href="#parcours" className="hover:text-white transition-colors">Parcours</a>
+            <a href="#skills" className="hover:text-white transition-colors">Compétences</a>
+            <a href="#projects" className="hover:text-white transition-colors">Projets</a>
+            <a href="#contact" className="hover:text-white transition-colors">Contact</a>
           </div>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0}
-            className="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 mb-6">
-            <Sparkles className="w-3.5 h-3.5" />
-            Disponible pour des opportunités
-          </motion.div>
-
-          <motion.h1 variants={fadeUp} initial="hidden" animate="visible" custom={1}
-            className="text-5xl md:text-7xl font-bold tracking-tight text-neutral-900 dark:text-white mb-4 leading-none">
-            P. Manassé<br />
-            <span className="text-indigo-600 dark:text-indigo-400">YAMEOGO</span>
-          </motion.h1>
-
-          <motion.p variants={fadeUp} initial="hidden" animate="visible" custom={2}
-            className="text-lg md:text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl leading-relaxed mb-8">
-            Informaticien en formation en Licence de Développement Web à l&apos;ISCOM, passionné par le développement logiciel et la conception de solutions numériques.
+      <section className="relative min-h-screen flex flex-col justify-center px-6 pt-14 pb-20">
+        <div className="max-w-5xl mx-auto w-full">
+          <motion.p {...fade(0.1)} className="text-sm text-white/50 mb-6 tracking-widest uppercase">
+            Bonjour, je suis
           </motion.p>
 
-          <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={3}
-            className="flex flex-wrap items-center gap-4">
+          <motion.h1 {...fade(0.2)} className="text-6xl md:text-8xl font-bold tracking-tight leading-none mb-6">
+            P. Manassé<br />
+            <span className="text-white/40">YAMEOGO</span>
+          </motion.h1>
+
+          <motion.p {...fade(0.35)} className="text-lg md:text-xl text-white/70 max-w-xl leading-relaxed mb-10">
+            J&apos;apprends, je construis, je casse, je recommence —
+            étudiant en développement web à l&apos;ISCOM, Burkina Faso.
+          </motion.p>
+
+          <motion.div {...fade(0.45)} className="flex flex-wrap gap-4">
             <a href="#projects"
-              className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors">
+              className="group flex items-center gap-2 px-6 py-3 bg-white text-black rounded-full text-sm font-medium hover:bg-white/90 transition-colors">
               Voir mes projets
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </a>
             <a href="#contact"
-              className="px-6 py-3 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl font-medium hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+              className="flex items-center gap-2 px-6 py-3 border border-white/10 text-white/60 rounded-full text-sm hover:border-white/30 hover:text-white transition-colors">
               Me contacter
             </a>
+            {settings.cv_url && (
+              <a href={settings.cv_url} target="_blank" rel="noopener noreferrer" download
+                className="flex items-center gap-2 px-6 py-3 border border-white/10 text-white/60 rounded-full text-sm hover:border-white/30 hover:text-white transition-colors">
+                <Download className="w-4 h-4" /> Télécharger CV
+              </a>
+            )}
           </motion.div>
         </div>
+
+        <motion.div {...fade(0.8)} className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0 pointer-events-none">
+          <span className="text-xs text-white/20 tracking-widest uppercase">Scroll</span>
+          <div className="w-px h-12 bg-gradient-to-b from-white/20 to-transparent" />
+        </motion.div>
       </section>
 
       {/* About */}
-      <section id="about" className="py-20 px-6 bg-white dark:bg-neutral-900">
+      <section id="about" className="py-32 px-6">
         <div className="max-w-5xl mx-auto">
-          <motion.h2 variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
-            className="text-3xl font-bold text-neutral-900 dark:text-white mb-12">
-            À propos
-          </motion.h2>
-          <div className="grid md:grid-cols-2 gap-12">
-            <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1}>
-              <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed mb-6">
-                Étudiant en informatique à l&apos;ISCOM, je me spécialise dans le développement web et logiciel. 
-                Curieux et autodidacte, j&apos;aime construire des outils concrets qui résolvent de vrais problèmes.
+          <div className="grid md:grid-cols-2 gap-20">
+            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
+              <p className="text-xs text-white/50 tracking-widest uppercase mb-6">À propos</p>
+              <h2 className="text-3xl font-bold text-white mb-6 leading-snug">
+                Un étudiant qui construit<br />des choses concrètes.
+              </h2>
+              <p className="text-white/70 leading-relaxed mb-4">
+                Je suis en Licence de Développement Web à l&apos;ISCOM. Je ne me contente pas des cours —
+                chaque projet est une occasion de tester quelque chose de réel.
               </p>
-              <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                Chaque projet est pour moi une occasion d&apos;apprendre, d&apos;expérimenter et de progresser — 
-                que ce soit en back-end, en front-end ou en administration système.
+              <p className="text-white/70 leading-relaxed">
+                Back-end, front-end, bases de données, déploiement — j&apos;aime comprendre comment les pièces s&apos;assemblent.
               </p>
             </motion.div>
-            <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={2}
-              className="space-y-4">
+
+            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.7, delay: 0.1 }}
+              className="space-y-3">
               {[
-                { icon: GraduationCap, label: "Formation", value: "Licence Développement Web — ISCOM" },
-                { icon: MapPin, label: "Localisation", value: "Burkina Faso" },
-                { icon: Code2, label: "Spécialité", value: "Développement Web & Logiciel" },
-              ].map(({ icon: Icon, label, value }) => (
-                <div key={label} className="flex items-center gap-4 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800">
-                  <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center shrink-0">
-                    <Icon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                { icon: GraduationCap, label: "Licence Développement Web", sub: "ISCOM" },
+                { icon: MapPin, label: "Burkina Faso", sub: "Afrique de l'Ouest" },
+                { icon: GitBranch, label: "Web & Logiciel", sub: "Spécialité" },
+              ].map(({ icon: Icon, label, sub }) => (
+                <div key={label} className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                  <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-white/40" />
                   </div>
                   <div>
-                    <p className="text-xs text-neutral-400 dark:text-neutral-500">{label}</p>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{value}</p>
+                    <p className="text-sm text-white/80 font-medium">{label}</p>
+                    <p className="text-xs text-white/50">{sub}</p>
                   </div>
                 </div>
               ))}
@@ -98,22 +120,88 @@ export default function HomeClient({ projects }: { projects: Project[] }) {
         </div>
       </section>
 
-      {/* Projects */}
-      <section id="projects" className="py-20 px-6">
+      {/* Timeline */}
+      <section id="parcours" className="py-32 px-6 border-t border-white/5">
         <div className="max-w-5xl mx-auto">
-          <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mb-12">
-            <h2 className="text-3xl font-bold text-neutral-900 dark:text-white mb-3">Mes projets</h2>
-            <p className="text-neutral-500 dark:text-neutral-400">Ce que j&apos;ai construit jusqu&apos;ici.</p>
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="mb-16">
+            <p className="text-xs text-white/50 tracking-widest uppercase mb-4">Parcours</p>
+            <h2 className="text-3xl font-bold text-white">Mon chemin jusqu&apos;ici.</h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-12">
+            {categories.map((cat, ci) => (
+              <motion.div key={cat} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: ci * 0.1 }}>
+                <p className="text-xs text-white/50 tracking-widest uppercase mb-6">{cat}</p>
+                <div className="relative pl-4 border-l border-white/10 space-y-6">
+                  {timeline.filter((t) => t.category === cat).map((item) => (
+                    <div key={item.id} className="relative">
+                      <div className="absolute -left-[1.35rem] top-1.5 w-2 h-2 rounded-full bg-white/20 border border-white/10" />
+                      <p className="text-sm font-medium text-white/85 leading-snug">{item.title}</p>
+                      {item.subtitle && <p className="text-xs text-white/50 mt-1 leading-relaxed">{item.subtitle}</p>}
+                      {item.year && <p className="text-xs text-white/30 mt-1">{item.year}</p>}
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Skills */}
+      <section id="skills" className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="mb-16">
+            <p className="text-xs text-white/50 tracking-widest uppercase mb-4">Compétences</p>
+            <h2 className="text-3xl font-bold text-white">Ce que je sais faire.</h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-x-16 gap-y-12">
+            {domains.map((domain, di) => (
+              <motion.div key={domain}
+                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ duration: 0.6, delay: di * 0.08 }}>
+                <p className="text-xs text-white/50 tracking-widest uppercase mb-5">{domain}</p>
+                <div className="space-y-4">
+                  {skills.filter((s) => s.domain === domain).map((skill) => {
+                    const cfg = LEVEL_CONFIG[skill.level as keyof typeof LEVEL_CONFIG] ?? LEVEL_CONFIG["Débutant"];
+                    return (
+                      <div key={skill.id}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-sm text-white/85">{skill.name}</span>
+                          <span className="text-xs text-white/50">{cfg.label}</span>
+                        </div>
+                        <div className="h-px bg-white/5 rounded-full overflow-hidden">
+                          <motion.div
+                            className={`h-full ${cfg.color} rounded-full`}
+                            initial={{ width: 0 }}
+                            whileInView={{ width: cfg.pct }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Projects */}
+      <section id="projects" className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="mb-16">
+            <p className="text-xs text-white/50 tracking-widest uppercase mb-4">Projets</p>
+            <h2 className="text-3xl font-bold text-white">Ce que j&apos;ai construit.</h2>
           </motion.div>
 
           {projects.length === 0 ? (
-            <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
-              className="text-center py-20 text-neutral-400 dark:text-neutral-600">
-              <Code2 className="w-12 h-12 mx-auto mb-4 opacity-30" />
-              <p>Les projets arrivent bientôt...</p>
-            </motion.div>
+            <p className="text-white/20 text-sm">Les projets arrivent bientôt...</p>
           ) : (
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-5">
               {projects.map((project, i) => (
                 <ProjectCard key={project.id} project={project} index={i} />
               ))}
@@ -123,30 +211,36 @@ export default function HomeClient({ projects }: { projects: Project[] }) {
       </section>
 
       {/* Contact */}
-      <section id="contact" className="py-20 px-6 bg-white dark:bg-neutral-900">
-        <div className="max-w-5xl mx-auto text-center">
-          <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            <h2 className="text-3xl font-bold text-neutral-900 dark:text-white mb-4">Travaillons ensemble</h2>
-            <p className="text-neutral-500 dark:text-neutral-400 mb-8 max-w-md mx-auto">
-              Vous avez un projet, une idée, ou juste envie d&apos;échanger ? Je suis disponible.
+      <section id="contact" className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
+            <p className="text-xs text-white/50 tracking-widest uppercase mb-6">Contact</p>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
+              Vous avez un projet ?<br />
+              <span className="text-white/40">Parlons-en.</span>
+            </h2>
+            <p className="text-white/60 mb-10 max-w-md leading-relaxed">
+              Que ce soit pour collaborer, poser une question ou juste échanger — je réponds.
             </p>
-            <div className="flex justify-center gap-4">
-              <a href="mailto:contact@example.com"
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors">
-                <Mail className="w-4 h-4" /> M&apos;écrire
+            <div className="flex flex-wrap gap-4">
+              <a href="mailto:manassey05@gmail.com"
+                className="group flex items-center gap-2 px-6 py-3 bg-white text-black rounded-full text-sm font-medium hover:bg-white/90 transition-colors">
+                <Mail className="w-4 h-4" /> manassey05@gmail.com
               </a>
               <a href="https://github.com" target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 px-6 py-3 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl font-medium hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-                <GitBranch className="w-4 h-4" /> GitHub
+                className="flex items-center gap-2 px-6 py-3 border border-white/10 text-white/60 rounded-full text-sm hover:border-white/30 hover:text-white transition-colors">
+                <ExternalLink className="w-4 h-4" /> GitHub
               </a>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-6 border-t border-neutral-100 dark:border-neutral-800 text-center text-sm text-neutral-400 dark:text-neutral-600">
-        © {new Date().getFullYear()} P. Manassé YAMEOGO — Fait avec passion
+      <footer className="py-10 px-6 border-t border-white/5">
+        <div className="max-w-5xl mx-auto flex items-center justify-between text-xs text-white/20">
+          <span>© {new Date().getFullYear()} P. Manassé YAMEOGO</span>
+          <span>Burkina Faso</span>
+        </div>
       </footer>
     </main>
   );
