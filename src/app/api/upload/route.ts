@@ -9,7 +9,8 @@ export async function POST(req: NextRequest) {
     const { base64 } = await req.json();
     const url = await uploadImage(base64);
     return NextResponse.json({ url });
-  } catch {
+  } catch (error) {
+    console.error("Upload error:", error);
     return NextResponse.json({ error: "Upload échoué" }, { status: 500 });
   }
 }
