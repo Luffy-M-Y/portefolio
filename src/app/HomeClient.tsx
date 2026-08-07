@@ -51,8 +51,7 @@ export default function HomeClient({ projects, skills, timeline, settings }: { p
           </motion.h1>
 
           <motion.p {...fade(0.35)} className="text-lg md:text-xl text-white/70 max-w-xl leading-relaxed mb-10">
-            J&apos;apprends, je construis, je casse, je recommence —
-            étudiant en développement web à l&apos;ISCOM, Burkina Faso.
+            {settings.bio || "J\u2019apprends, je construis, je casse, je recommence \u2014 étudiant en développement web \u00e0 l\u2019ISCOM, Burkina Faso."}
           </motion.p>
 
           <motion.div {...fade(0.45)} className="flex flex-wrap gap-4">
@@ -223,11 +222,11 @@ export default function HomeClient({ projects, skills, timeline, settings }: { p
               Que ce soit pour collaborer, poser une question ou juste échanger — je réponds.
             </p>
             <div className="flex flex-wrap gap-4">
-              <a href="mailto:manassey05@gmail.com"
+              <a href={`mailto:${settings.email || "manassey05@gmail.com"}`}
                 className="group flex items-center gap-2 px-6 py-3 bg-white text-black rounded-full text-sm font-medium hover:bg-white/90 transition-colors">
-                <Mail className="w-4 h-4" /> manassey05@gmail.com
+                <Mail className="w-4 h-4" /> {settings.email || "manassey05@gmail.com"}
               </a>
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer"
+              <a href={settings.github_url || "https://github.com"} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-2 px-6 py-3 border border-white/10 text-white/60 rounded-full text-sm hover:border-white/30 hover:text-white transition-colors">
                 <ExternalLink className="w-4 h-4" /> GitHub
               </a>
