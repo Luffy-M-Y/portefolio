@@ -7,7 +7,13 @@ export const revalidate = 0;
 
 export type Skill = { id: number; domain: string; name: string; level: string };
 export type TimelineItem = { id: number; category: string; title: string; subtitle?: string; year?: string; sort_order: number };
-export type Settings = { cv_url?: string };
+export type Settings = {
+  cv_url?: string;
+  bio?: string;
+  email?: string;
+  github_url?: string;
+  available?: string;
+};
 
 const SEED_TIMELINE = [
   { category: "Formation", title: "Licence en Développement Web", subtitle: "ISCOM", year: "2025 – aujourd'hui", sort_order: 0 },

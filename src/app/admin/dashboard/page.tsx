@@ -25,11 +25,23 @@ export default function DashboardPage() {
   const [editingItem, setEditingItem] = useState<TimelineItem | null>(null);
   const [cvUrl, setCvUrl] = useState("");
   const [cvUploading, setCvUploading] = useState(false);
+  const [siteSettings, setSiteSettings] = useState({ bio: "", email: "", github_url: "", available: "true" });
+  const [savingSettings, setSavingSettings] = useState(false);
 
   const fetchProjects = async () => { const r = await fetch("/api/projects"); setProjects(await r.json()); };
   const fetchSkills = async () => { const r = await fetch("/api/skills"); setSkills(await r.json()); };
   const fetchTimeline = async () => { const r = await fetch("/api/timeline"); setTimeline(await r.json()); };
-  const fetchSettings = async () => { const r = await fetch("/api/settings"); const s = await r.json(); setCvUrl(s.cv_url ?? ""); };
+  const fetchSettings = async () => {
+    const r = await fetch("/api/settings");
+    const s = await r.json();
+    setCvUrl(s.cv_url ?? "");
+    setSiteSettings({
+      bio: s.bio ?? "",
+      email: s.email ?? "",
+      github_url: s.github_url ?? "",
+      available: s.available ?? "true",
+    });
+  };
 
   useEffect(() => { fetchProjects(); fetchSkills(); fetchTimeline(); fetchSettings(); }, []);
 
@@ -338,32 +350,69 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
-      </div>
 
         {/* Settings tab */}
         {tab === "settings" && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 p-6">
-            <h2 className="font-semibold text-neutral-900 dark:text-white mb-6">CV téléchargeable</h2>
-            <div className="space-y-4">
-              <label className="flex items-center gap-3 px-4 py-3 border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl cursor-pointer hover:border-indigo-400 transition-colors w-fit">
-                <Download className="w-5 h-5 text-neutral-400" />
-                <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                  {cvUploading ? "Upload en cours..." : "Choisir un fichier PDF"}
-                </span>
-                <input type="file" accept=".pdf" className="hidden" onChange={handleCvUpload} disabled={cvUploading} />
-              </label>
-              {cvUrl && (
-                <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-950 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                  <p className="text-xs text-emerald-700 dark:text-emerald-300 truncate flex-1">CV_Manasse_YAMEOGO.pdf</p>
-                  <a href={cvUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline shrink-0">Voir</a>
-                  <button onClick={handleCvDelete} className="text-xs text-red-400 hover:text-red-600 shrink-0">Supprimer</button>
+          <div className="space-y-6">
+            {/* Infos du portfolio */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 p-6">
+              <h2 className="font-semibold text-neutral-900 dark:text-white mb-5">Informations du portfolio</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-neutral-500 mb-1.5">Bio (texte d&apos;accroche)</label>
+                  <textarea rows={3} className={`${inputClass} w-full`} placeholder="J'apprends, je construis..." value={siteSettings.bio}
+                    onChange={(e) => setSiteSettings((s) => ({ ...s, bio: e.target.value }))} />
                 </div>
-              )}
-              {!cvUrl && <p className="text-xs text-neutral-400">Aucun CV uploadé — le bouton n&apos;apparaîtra pas sur le portfolio.</p>}
+                <div>
+                  <label className="block text-xs font-medium text-neutral-500 mb-1.5">Email de contact</label>
+                  <input type="email" className={`${inputClass} w-full`} placeholder="ton@email.com" value={siteSettings.email}
+                    onChange={(e) => setSiteSettings((s) => ({ ...s, email: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-neutral-500 mb-1.5">Lien GitHub</label>
+                  <input type="url" className={`${inputClass} w-full`} placeholder="https://github.com/..." value={siteSettings.github_url}
+                    onChange={(e) => setSiteSettings((s) => ({ ...s, github_url: e.target.value }))} />
+                </div>
+                <button onClick={async () => {
+                  setSavingSettings(true);
+                  await Promise.all([
+                    fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "bio", value: siteSettings.bio }) }),
+                    fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "email", value: siteSettings.email }) }),
+                    fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "github_url", value: siteSettings.github_url }) }),
+                  ]);
+                  setSavingSettings(false);
+                }} disabled={savingSettings}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+                  <Check className="w-4 h-4" /> {savingSettings ? "Sauvegarde..." : "Sauvegarder"}
+                </button>
+              </div>
+            </div>
+
+            {/* CV */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 p-6">
+              <h2 className="font-semibold text-neutral-900 dark:text-white mb-5">CV téléchargeable</h2>
+              <div className="space-y-4">
+                <label className="flex items-center gap-3 px-4 py-3 border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl cursor-pointer hover:border-indigo-400 transition-colors w-fit">
+                  <Download className="w-5 h-5 text-neutral-400" />
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                    {cvUploading ? "Upload en cours..." : "Choisir un fichier PDF"}
+                  </span>
+                  <input type="file" accept=".pdf" className="hidden" onChange={handleCvUpload} disabled={cvUploading} />
+                </label>
+                {cvUrl && (
+                  <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-950 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                    <p className="text-xs text-emerald-700 dark:text-emerald-300 truncate flex-1">CV_Manasse_YAMEOGO.pdf</p>
+                    <a href={cvUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline shrink-0">Voir</a>
+                    <button onClick={handleCvDelete} className="text-xs text-red-400 hover:text-red-600 shrink-0">Supprimer</button>
+                  </div>
+                )}
+                {!cvUrl && <p className="text-xs text-neutral-400">Aucun CV uploadé — le bouton n&apos;apparaîra pas sur le portfolio.</p>}
+              </div>
             </div>
           </div>
         )}
+      </div>
 
       {modal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
