@@ -1,13 +1,13 @@
 "use client";
 import { motion } from "framer-motion";
-import { GitBranch, Mail, MapPin, GraduationCap, ArrowRight, ExternalLink } from "lucide-react";
+import { GitBranch, Mail, MapPin, GraduationCap, ArrowRight, ExternalLink, Download } from "lucide-react";
 import ProjectCard from "@/components/ProjectCard";
 import type { Project } from "@/components/ProjectCard";
-import type { Skill, TimelineItem } from "./page";
+import type { Skill, TimelineItem, Settings } from "./page";
 
 const fade = (delay = 0) => ({
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] } },
+  initial: { opacity: 0, y: 20 } as const,
+  animate: { opacity: 1, y: 0, transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] as const } },
 });
 
 const LEVEL_CONFIG = {
@@ -18,7 +18,7 @@ const LEVEL_CONFIG = {
 
 const CATEGORY_ORDER = ["Formation", "Expérience", "Langues"];
 
-export default function HomeClient({ projects, skills, timeline }: { projects: Project[]; skills: Skill[]; timeline: TimelineItem[] }) {
+export default function HomeClient({ projects, skills, timeline, settings }: { projects: Project[]; skills: Skill[]; timeline: TimelineItem[]; settings: Settings }) {
   const domains = Array.from(new Set(skills.map((s) => s.domain)));
   const categories = CATEGORY_ORDER.filter((c) => timeline.some((t) => t.category === c));
   return (
@@ -27,10 +27,11 @@ export default function HomeClient({ projects, skills, timeline }: { projects: P
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#0f0f0f]/80 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="text-sm font-medium text-white/80 tracking-widest uppercase">Manassé</span>
+          <span className="text-sm font-medium text-white/80 tracking-widest uppercase">M-Y's/Portfolio</span>
           <div className="flex items-center gap-8 text-sm text-white/60">
             <a href="#about" className="hover:text-white transition-colors">À propos</a>
             <a href="#parcours" className="hover:text-white transition-colors">Parcours</a>
+            <a href="#skills" className="hover:text-white transition-colors">Compétences</a>
             <a href="#projects" className="hover:text-white transition-colors">Projets</a>
             <a href="#contact" className="hover:text-white transition-colors">Contact</a>
           </div>
@@ -38,7 +39,7 @@ export default function HomeClient({ projects, skills, timeline }: { projects: P
       </nav>
 
       {/* Hero */}
-      <section className="min-h-screen flex flex-col justify-center px-6 pt-14">
+      <section className="relative min-h-screen flex flex-col justify-center px-6 pt-14 pb-20">
         <div className="max-w-5xl mx-auto w-full">
           <motion.p {...fade(0.1)} className="text-sm text-white/50 mb-6 tracking-widest uppercase">
             Bonjour, je suis
@@ -64,14 +65,19 @@ export default function HomeClient({ projects, skills, timeline }: { projects: P
               className="flex items-center gap-2 px-6 py-3 border border-white/10 text-white/60 rounded-full text-sm hover:border-white/30 hover:text-white transition-colors">
               Me contacter
             </a>
-          </motion.div>
-
-          {/* Scroll indicator */}
-          <motion.div {...fade(0.8)} className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-            <span className="text-xs text-white/20 tracking-widest uppercase">Scroll</span>
-            <div className="w-px h-12 bg-gradient-to-b from-white/20 to-transparent" />
+            {settings.cv_url && (
+              <a href={settings.cv_url} target="_blank" rel="noopener noreferrer" download
+                className="flex items-center gap-2 px-6 py-3 border border-white/10 text-white/60 rounded-full text-sm hover:border-white/30 hover:text-white transition-colors">
+                <Download className="w-4 h-4" /> Télécharger CV
+              </a>
+            )}
           </motion.div>
         </div>
+
+        <motion.div {...fade(0.8)} className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0 pointer-events-none">
+          <span className="text-xs text-white/20 tracking-widest uppercase">Scroll</span>
+          <div className="w-px h-12 bg-gradient-to-b from-white/20 to-transparent" />
+        </motion.div>
       </section>
 
       {/* About */}

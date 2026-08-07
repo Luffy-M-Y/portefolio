@@ -7,6 +7,7 @@ export const revalidate = 0;
 
 export type Skill = { id: number; domain: string; name: string; level: string };
 export type TimelineItem = { id: number; category: string; title: string; subtitle?: string; year?: string; sort_order: number };
+export type Settings = { cv_url?: string };
 
 const SEED_TIMELINE = [
   { category: "Formation", title: "Licence en Développement Web", subtitle: "ISCOM", year: "2025 – aujourd'hui", sort_order: 0 },
@@ -54,5 +55,8 @@ export default async function Home() {
     ? await sql`SELECT * FROM skills ORDER BY domain, id` as Skill[]
     : skills;
 
-  return <HomeClient projects={projects} skills={seededSkills} timeline={timeline} />;
+  const settingsRows = await sql`SELECT * FROM settings`;
+  const settings: Settings = Object.fromEntries(settingsRows.map((r: { key: string; value: string }) => [r.key, r.value]));
+
+  return <HomeClient projects={projects} skills={seededSkills} timeline={timeline} settings={settings} />;
 }

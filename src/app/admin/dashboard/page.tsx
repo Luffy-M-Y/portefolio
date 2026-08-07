@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
-import { Plus, Pencil, Trash2, LogOut, ExternalLink, LayoutDashboard, X, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, LogOut, ExternalLink, LayoutDashboard, X, Check, Download } from "lucide-react";
 import ProjectForm from "@/components/ProjectForm";
 import type { Project } from "@/components/ProjectCard";
 
@@ -13,7 +13,7 @@ const LEVELS = ["Débutant", "Intermédiaire", "Avancé"];
 const CATEGORIES = ["Formation", "Expérience", "Langues"];
 
 export default function DashboardPage() {
-  const [tab, setTab] = useState<"projects" | "skills" | "timeline">("projects");
+  const [tab, setTab] = useState<"projects" | "skills" | "timeline" | "settings">("projects");
   const [projects, setProjects] = useState<Project[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
@@ -23,12 +23,15 @@ export default function DashboardPage() {
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
   const [newItem, setNewItem] = useState({ category: CATEGORIES[0], title: "", subtitle: "", year: "" });
   const [editingItem, setEditingItem] = useState<TimelineItem | null>(null);
+  const [cvUrl, setCvUrl] = useState("");
+  const [cvUploading, setCvUploading] = useState(false);
 
   const fetchProjects = async () => { const r = await fetch("/api/projects"); setProjects(await r.json()); };
   const fetchSkills = async () => { const r = await fetch("/api/skills"); setSkills(await r.json()); };
   const fetchTimeline = async () => { const r = await fetch("/api/timeline"); setTimeline(await r.json()); };
+  const fetchSettings = async () => { const r = await fetch("/api/settings"); const s = await r.json(); setCvUrl(s.cv_url ?? ""); };
 
-  useEffect(() => { fetchProjects(); fetchSkills(); fetchTimeline(); }, []);
+  useEffect(() => { fetchProjects(); fetchSkills(); fetchTimeline(); fetchSettings(); }, []);
 
   const handleSubmit = async (data: Partial<Project>) => {
     if (modal.project?.id) {
@@ -86,6 +89,29 @@ export default function DashboardPage() {
     fetchTimeline();
   };
 
+  const handleCvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCvUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "ihtxsrjt");
+    formData.append("public_id", "CV_Manasse_YAMEOGO");
+    formData.append("resource_type", "raw");
+    const res = await fetch("https://api.cloudinary.com/v1_1/injaxhrz/raw/upload", { method: "POST", body: formData });
+    const data = await res.json();
+    const url = data.secure_url;
+    await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "cv_url", value: url }) });
+    setCvUrl(url);
+    setCvUploading(false);
+  };
+
+  const handleCvDelete = async () => {
+    if (!confirm("Supprimer le CV ?")) return;
+    await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "cv_url", value: "" }) });
+    setCvUrl("");
+  };
+
   const inputClass = "px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500";
   const domains = Array.from(new Set(skills.map((s) => s.domain)));
   const tlCategories = Array.from(new Set(timeline.map((t) => t.category)));
@@ -133,10 +159,10 @@ export default function DashboardPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-1 w-fit">
-          {(["projects", "skills", "timeline"] as const).map((t) => (
+          {(["projects", "skills", "timeline", "settings"] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === t ? "bg-indigo-600 text-white" : "text-neutral-500 hover:text-neutral-900 dark:hover:text-white"}`}>
-              {t === "projects" ? "Projets" : t === "skills" ? "Compétences" : "Parcours"}
+              {t === "projects" ? "Projets" : t === "skills" ? "Compétences" : t === "timeline" ? "Parcours" : "Réglages"}
             </button>
           ))}
         </div>
@@ -313,6 +339,31 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+        {/* Settings tab */}
+        {tab === "settings" && (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 p-6">
+            <h2 className="font-semibold text-neutral-900 dark:text-white mb-6">CV téléchargeable</h2>
+            <div className="space-y-4">
+              <label className="flex items-center gap-3 px-4 py-3 border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl cursor-pointer hover:border-indigo-400 transition-colors w-fit">
+                <Download className="w-5 h-5 text-neutral-400" />
+                <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                  {cvUploading ? "Upload en cours..." : "Choisir un fichier PDF"}
+                </span>
+                <input type="file" accept=".pdf" className="hidden" onChange={handleCvUpload} disabled={cvUploading} />
+              </label>
+              {cvUrl && (
+                <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-950 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300 truncate flex-1">CV_Manasse_YAMEOGO.pdf</p>
+                  <a href={cvUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline shrink-0">Voir</a>
+                  <button onClick={handleCvDelete} className="text-xs text-red-400 hover:text-red-600 shrink-0">Supprimer</button>
+                </div>
+              )}
+              {!cvUrl && <p className="text-xs text-neutral-400">Aucun CV uploadé — le bouton n&apos;apparaîtra pas sur le portfolio.</p>}
+            </div>
+          </div>
+        )}
 
       {modal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">

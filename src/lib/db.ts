@@ -40,4 +40,10 @@ export async function initDB() {
       sort_order INT DEFAULT 0
     )
   `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS settings (
+      key VARCHAR(100) PRIMARY KEY,
+      value TEXT
+    )
+  `;
 }
