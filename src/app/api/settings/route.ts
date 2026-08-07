@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 export async function GET() {
   try {
     const rows = await sql`SELECT * FROM settings`;
-    const settings = Object.fromEntries(rows.map((r: { key: string; value: string }) => [r.key, r.value]));
+    const settings = Object.fromEntries((rows as { key: string; value: string }[]).map((r) => [r.key, r.value]));
     return NextResponse.json(settings);
   } catch {
     return NextResponse.json({}, { status: 500 });
